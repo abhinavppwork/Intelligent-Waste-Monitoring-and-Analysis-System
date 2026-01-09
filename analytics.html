@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - EcoSort</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="analytics.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="auth.js"></script>
+</head>
+<body>
+    <script>
+        // Check if user is logged in, redirect to login if not
+        if (!isUserLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-recycle"></i>
+                <span>EcoSort</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="scanner.html">Scan Waste</a></li>
+                <li><a href="analytics.html" class="active">Analytics</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Analytics Dashboard -->
+    <section class="analytics-section">
+        <div class="container">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <div class="header-text">
+                    <h1>Waste Analytics Dashboard</h1>
+                    <p>Track your waste segregation patterns and environmental impact</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" id="exportBtn">
+                        <i class="fas fa-download"></i> Export Data
+                    </button>
+                    <button class="btn btn-secondary" id="resetBtn">
+                        <i class="fas fa-eraser"></i> Reset Analytics
+                    </button>
+                    <button class="btn btn-primary" id="refreshBtn">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card total">
+                    <div class="stat-icon">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Waste</div>
+                        <div class="stat-value" id="totalWaste">0</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i> 12% from last week
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card dry">
+                    <div class="stat-icon">
+                        <i class="fas fa-recycle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Dry Waste</div>
+                        <div class="stat-value" id="dryWaste">0</div>
+                        <div class="stat-percentage" id="dryPercentage">0%</div>
+                    </div>
+                </div>
+
+                <div class="stat-card wet">
+                    <div class="stat-icon">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Wet Waste</div>
+                        <div class="stat-value" id="wetWaste">0</div>
+                        <div class="stat-percentage" id="wetPercentage">0%</div>
+                    </div>
+                </div>
+
+                <div class="stat-card ewaste">
+                    <div class="stat-icon">
+                        <i class="fas fa-laptop"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">E-Waste</div>
+                        <div class="stat-value" id="ewasteCount">0</div>
+                        <div class="stat-percentage" id="ewastePercentage">0%</div>
+                    </div>
+                </div>
+
+                <div class="stat-card hazardous">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Hazardous</div>
+                        <div class="stat-value" id="hazardousWaste">0</div>
+                        <div class="stat-percentage" id="hazardousPercentage">0%</div>
+                    </div>
+                </div>
+
+                <div class="stat-card recycling">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-label">Recycling Rate</div>
+                        <div class="stat-value" id="recyclingRate">0%</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i> Great job!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <!-- Daily Waste Chart -->
+                <div class="chart-card large">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-calendar-alt"></i> Daily Waste Generation</h3>
+                        <div class="chart-controls">
+                            <button class="period-btn active" data-period="7">7 Days</button>
+                            <button class="period-btn" data-period="14">14 Days</button>
+                            <button class="period-btn" data-period="30">30 Days</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="dailyWasteChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Category Distribution Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-pie"></i> Waste Category Distribution</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <span class="legend-color dry"></span>
+                            <span>Dry Waste</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color wet"></span>
+                            <span>Wet Waste</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color ewaste"></span>
+                            <span>E-Waste</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color hazardous"></span>
+                            <span>Hazardous</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recycling vs Landfill Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-balance-scale"></i> Recycling vs Landfill</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="recyclingChart"></canvas>
+                    </div>
+                    <div class="chart-stats">
+                        <div class="chart-stat">
+                            <span class="stat-label">Recycled</span>
+                            <span class="stat-value recycled" id="recycledAmount">0 kg</span>
+                        </div>
+                        <div class="chart-stat">
+                            <span class="stat-label">Landfill</span>
+                            <span class="stat-value landfill" id="landfillAmount">0 kg</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Environmental Impact Section -->
+            <div class="impact-section">
+                <h2><i class="fas fa-globe-americas"></i> Your Environmental Impact</h2>
+                <div class="impact-cards-grid">
+                    <div class="impact-metric-card">
+                        <div class="metric-icon co2">
+                            <i class="fas fa-cloud"></i>
+                        </div>
+                        <h4>CO₂ Prevented</h4>
+                        <div class="metric-value" id="co2Saved">0 kg</div>
+                        <p>Equivalent to planting <span id="treesEquivalent">0</span> trees</p>
+                    </div>
+
+                    <div class="impact-metric-card">
+                        <div class="metric-icon energy">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h4>Energy Saved</h4>
+                        <div class="metric-value" id="energySaved">0 kWh</div>
+                        <p>Powers a home for <span id="daysEquivalent">0</span> days</p>
+                    </div>
+
+                    <div class="impact-metric-card">
+                        <div class="metric-icon water">
+                            <i class="fas fa-tint"></i>
+                        </div>
+                        <h4>Water Conserved</h4>
+                        <div class="metric-value" id="waterSaved">0 L</div>
+                        <p>Enough for <span id="showersEquivalent">0</span> showers</p>
+                    </div>
+
+                    <div class="impact-metric-card">
+                        <div class="metric-icon landfill">
+                            <i class="fas fa-mountain"></i>
+                        </div>
+                        <h4>Landfill Diverted</h4>
+                        <div class="metric-value" id="landfillDiverted">0 kg</div>
+                        <p>That's <span id="bagEquivalent">0</span> garbage bags!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Achievements Section -->
+            <div class="achievements-section">
+                <h2><i class="fas fa-trophy"></i> Your Achievements</h2>
+                <div class="achievements-grid">
+                    <div class="achievement-card locked" id="achievement1">
+                        <div class="achievement-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h4>First Scan</h4>
+                        <p>Complete your first waste scan</p>
+                    </div>
+
+                    <div class="achievement-card locked" id="achievement2">
+                        <div class="achievement-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <h4>Week Streak</h4>
+                        <p>Scan waste for 7 consecutive days</p>
+                    </div>
+
+                    <div class="achievement-card locked" id="achievement3">
+                        <div class="achievement-icon">
+                            <i class="fas fa-recycle"></i>
+                        </div>
+                        <h4>Recycling Hero</h4>
+                        <p>Recycle 50 items</p>
+                    </div>
+
+                    <div class="achievement-card locked" id="achievement4">
+                        <div class="achievement-icon">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <h4>Eco Warrior</h4>
+                        <p>Prevent 100kg CO₂ emissions</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips Section -->
+            <div class="tips-section">
+                <h2><i class="fas fa-lightbulb"></i> Smart Waste Tips</h2>
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <div class="tip-number">1</div>
+                        <h4>Rinse Before Recycling</h4>
+                        <p>Clean containers improve recycling quality and prevent contamination of other recyclables.</p>
+                    </div>
+                    <div class="tip-card">
+                        <div class="tip-number">2</div>
+                        <h4>Compost at Home</h4>
+                        <p>Start a compost bin for organic waste. It reduces landfill waste and creates nutrient-rich soil.</p>
+                    </div>
+                    <div class="tip-card">
+                        <div class="tip-number">3</div>
+                        <h4>E-Waste Collection</h4>
+                        <p>Never throw electronics in regular trash. Find local e-waste collection centers for proper disposal.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>EcoSort</h4>
+                    <p>Smart waste management for sustainable cities</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="scanner.html">Scanner</a></li>
+                        <li><a href="analytics.html">Analytics</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <p>Email: info@ecosort.com</p>
+                    <p>Phone: +1 234 567 8900</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 EcoSort. Built for a sustainable future.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Analytics script: computes metrics from localStorage 'wasteScans'
+        function toKg(value, unit) {
+            const v = parseFloat(value) || 0;
+            if (unit === 'kg') return v;
+            if (unit === 'g') return v / 1000;
+            if (unit === 'lbs') return v * 0.453592;
+            return v;
+        }
+
+        function loadAnalytics() {
+            const scans = JSON.parse(localStorage.getItem('wasteScans') || '[]');
+
+            let totalWeightKg = 0;
+            const counts = { dry:0, wet:0, ewaste:0, hazardous:0 };
+            const weightByCategory = { dry:0, wet:0, ewaste:0, hazardous:0 };
+            let recycledKg = 0;
+            let landfillKg = 0;
+
+            scans.forEach(s => {
+                const w = toKg(s.weight, s.unit);
+                totalWeightKg += w;
+                const cat = s.category || 'dry';
+                if (!counts[cat]) counts[cat] = 0;
+                counts[cat] += 1;
+                if (!weightByCategory[cat]) weightByCategory[cat] = 0;
+                weightByCategory[cat] += w;
+
+                // Determine recycled vs landfill by badge
+                const badge = (s.badge || '').toLowerCase();
+                if (badge.includes('recycl') || badge.includes('compost')) {
+                    recycledKg += w;
+                } else {
+                    landfillKg += w;
+                }
+            });
+
+            // Update DOM
+            document.getElementById('totalWaste').textContent = totalWeightKg.toFixed(2) + ' kg';
+            document.getElementById('dryWaste').textContent = (weightByCategory.dry||0).toFixed(2) + ' kg';
+            document.getElementById('wetWaste').textContent = (weightByCategory.wet||0).toFixed(2) + ' kg';
+            document.getElementById('ewasteCount').textContent = (counts.ewaste||0);
+            document.getElementById('hazardousWaste').textContent = (weightByCategory.hazardous||0).toFixed(2) + ' kg';
+
+            const recyclingRate = totalWeightKg > 0 ? (recycledKg / totalWeightKg * 100) : 0;
+            document.getElementById('recyclingRate').textContent = recyclingRate.toFixed(1) + '%';
+
+            document.getElementById('recycledAmount').textContent = recycledKg.toFixed(2) + ' kg';
+            document.getElementById('landfillAmount').textContent = landfillKg.toFixed(2) + ' kg';
+
+            // Simple environmental estimates
+            const co2PerKg = 0.8; // kg CO2 prevented per kg recycled (estimate)
+            const energyPerKg = 0.5; // kWh per kg
+            const waterPerKg = 10; // liters per kg
+
+            const co2Saved = recycledKg * co2PerKg;
+            const energySaved = recycledKg * energyPerKg;
+            const waterSaved = recycledKg * waterPerKg;
+
+            document.getElementById('co2Saved').textContent = co2Saved.toFixed(2) + ' kg';
+            document.getElementById('energySaved').textContent = energySaved.toFixed(2) + ' kWh';
+            document.getElementById('waterSaved').textContent = waterSaved.toFixed(0) + ' L';
+            document.getElementById('landfillDiverted').textContent = recycledKg.toFixed(2) + ' kg';
+
+            // Achievements
+            const achievement1 = document.getElementById('achievement1');
+            if (scans.length > 0) achievement1.classList.remove('locked');
+
+            // Prepare chart data
+            const chartData = {
+                scans,
+                totalWeightKg,
+                counts,
+                weightByCategory,
+                recycledKg,
+                landfillKg
+            };
+
+            renderCharts(chartData);
+        }
+
+        // Chart instances
+        let categoryChartObj = null;
+        let recyclingChartObj = null;
+        let dailyChartObj = null;
+
+        function renderCharts(data) {
+            const { scans, weightByCategory, recycledKg, landfillKg } = data;
+
+            // --- Category Pie Chart ---
+            const catLabels = ['Dry', 'Wet', 'E-Waste', 'Hazardous'];
+            const catValues = [
+                (weightByCategory.dry || 0).toFixed(3) * 1,
+                (weightByCategory.wet || 0).toFixed(3) * 1,
+                (weightByCategory.ewaste || 0).toFixed(3) * 1,
+                (weightByCategory.hazardous || 0).toFixed(3) * 1
+            ];
+
+            const catCtx = document.getElementById('categoryChart').getContext('2d');
+            if (categoryChartObj) categoryChartObj.destroy();
+            categoryChartObj = new Chart(catCtx, {
+                type: 'pie',
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        data: catValues,
+                        backgroundColor: ['#4CAF50','#FF9800','#9C27B0','#F44336']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // --- Recycling vs Landfill Bar Chart ---
+            const recCtx = document.getElementById('recyclingChart').getContext('2d');
+            if (recyclingChartObj) recyclingChartObj.destroy();
+            recyclingChartObj = new Chart(recCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Recycled', 'Landfill'],
+                    datasets: [{
+                        label: 'Weight (kg)',
+                        data: [recycledKg.toFixed(3) * 1, landfillKg.toFixed(3) * 1],
+                        backgroundColor: ['#2E7D32', '#8D6E63']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // --- Daily Waste Line Chart (last N days) with category breakdown ---
+            const periodBtns = document.querySelectorAll('.period-btn');
+            let period = 7;
+            const activeBtn = document.querySelector('.period-btn.active');
+            if (activeBtn) period = parseInt(activeBtn.dataset.period, 10) || 7;
+
+            const daily = aggregateDailyByCategory(scans, period);
+            const dailyCtx = document.getElementById('dailyWasteChart').getContext('2d');
+            if (dailyChartObj) dailyChartObj.destroy();
+            dailyChartObj = new Chart(dailyCtx, {
+                type: 'line',
+                data: {
+                    labels: daily.labels,
+                    datasets: [
+                        {
+                            label: 'Dry Waste (kg)',
+                            data: daily.dry,
+                            borderColor: '#4CAF50',
+                            backgroundColor: 'rgba(76,175,80,0.1)',
+                            fill: false,
+                            tension: 0.2,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Wet Waste (kg)',
+                            data: daily.wet,
+                            borderColor: '#FF9800',
+                            backgroundColor: 'rgba(255,152,0,0.1)',
+                            fill: false,
+                            tension: 0.2,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'E-Waste (kg)',
+                            data: daily.ewaste,
+                            borderColor: '#9C27B0',
+                            backgroundColor: 'rgba(156,39,176,0.1)',
+                            fill: false,
+                            tension: 0.2,
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Hazardous (kg)',
+                            data: daily.hazardous,
+                            borderColor: '#F44336',
+                            backgroundColor: 'rgba(244,67,54,0.1)',
+                            fill: false,
+                            tension: 0.2,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // Wire period buttons
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const p = parseInt(btn.dataset.period, 10) || 7;
+                    const d = aggregateDailyByCategory(scans, p);
+                    dailyChartObj.data.labels = d.labels;
+                    dailyChartObj.data.datasets[0].data = d.dry;
+                    dailyChartObj.data.datasets[1].data = d.wet;
+                    dailyChartObj.data.datasets[2].data = d.ewaste;
+                    dailyChartObj.data.datasets[3].data = d.hazardous;
+                    dailyChartObj.update();
+                };
+            });
+        }
+
+        function aggregateDailyByCategory(scans, days) {
+            const map = {};
+            const now = new Date();
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date(now);
+                d.setDate(now.getDate() - i);
+                const key = d.toISOString().split('T')[0];
+                map[key] = { dry: 0, wet: 0, ewaste: 0, hazardous: 0 };
+            }
+
+            scans.forEach(s => {
+                const dateKey = (new Date(s.timestamp)).toISOString().split('T')[0];
+                const w = toKg(s.weight, s.unit);
+                const cat = s.category || 'dry';
+                if (map.hasOwnProperty(dateKey)) {
+                    map[dateKey][cat] += w;
+                }
+            });
+
+            const labels = Object.keys(map);
+            const dry = labels.map(k => +(map[k].dry.toFixed(3)) );
+            const wet = labels.map(k => +(map[k].wet.toFixed(3)) );
+            const ewaste = labels.map(k => +(map[k].ewaste.toFixed(3)) );
+            const hazardous = labels.map(k => +(map[k].hazardous.toFixed(3)) );
+            return { labels, dry, wet, ewaste, hazardous };
+        }
+
+        function resetAnalytics() {
+            if (!confirm('Reset analytics and clear scan history? This cannot be undone.')) return;
+            localStorage.removeItem('wasteScans');
+            loadAnalytics();
+            alert('Analytics reset.');
+        }
+
+        function exportData() {
+            const scans = JSON.parse(localStorage.getItem('wasteScans') || '[]');
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(scans, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute('href', dataStr);
+            dlAnchor.setAttribute('download', 'ecosort_scans.json');
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAnalytics();
+            const refreshBtn = document.getElementById('refreshBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            if (refreshBtn) refreshBtn.addEventListener('click', loadAnalytics);
+            if (resetBtn) resetBtn.addEventListener('click', resetAnalytics);
+            if (exportBtn) exportBtn.addEventListener('click', exportData);
+        });
+    </script>
+</body>
+</html>

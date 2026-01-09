@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner - EcoSort</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="scanner.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="auth.js"></script>
+</head>
+<body>
+    <script>
+        // Check if user is logged in, redirect to login if not
+        if (!isUserLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-recycle"></i>
+                <span>EcoSort</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="scanner.html" class="active">Scan Waste</a></li>
+                <li><a href="analytics.html">Analytics</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Scanner Section -->
+    <section class="scanner-section">
+        <div class="container">
+            <div class="scanner-header">
+                <h1>Scan Waste QR Code</h1>
+                <p>Point your camera at a waste item's QR code to identify its category and get disposal instructions</p>
+            </div>
+
+            <div class="scanner-container">
+                <div class="scanner-card">
+                    <!-- Camera Preview -->
+                    <div class="camera-container">
+                        <div id="reader"></div>
+                        <div class="scanner-overlay">
+                            <div class="scan-frame"></div>
+                            <div class="scan-line"></div>
+                        </div>
+                    </div>
+
+                    <!-- Scanner Controls -->
+                    <div class="scanner-controls">
+                        <button id="startScanBtn" class="btn btn-primary">
+                            <i class="fas fa-camera"></i> Start Scanner
+                        </button>
+                        <button id="stopScanBtn" class="btn btn-secondary" style="display: none;">
+                            <i class="fas fa-stop"></i> Stop Scanner
+                        </button>
+                        <button id="uploadBtn" class="btn btn-primary">
+                            <i class="fas fa-image"></i> Upload Image
+                        </button>
+                        <input type="file" id="imageUploadInput" accept="image/*" style="display: none;">
+                    </div>
+
+                    <div class="scanner-status" id="scannerStatus">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Start scanning or upload a QR code image</span>
+                    </div>
+                </div>
+
+                <!-- Results Display -->
+                <div class="results-card" id="resultsCard" style="display: none;">
+                    <div class="result-header">
+                        <h2>Scan Result</h2>
+                        <button class="close-btn" id="closeResults">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="result-content">
+                        <div class="waste-category" id="wasteCategory">
+                            <div class="category-icon" id="categoryIcon">
+                                <i class="fas fa-leaf"></i>
+                            </div>
+                            <h3 id="categoryName">Dry Waste</h3>
+                            <span class="category-badge" id="categoryBadge">RECYCLABLE</span>
+                        </div>
+
+                        <div class="item-info">
+                            <h4>Item Detected</h4>
+                            <p id="itemName">Plastic Bottle</p>
+                        </div>
+
+                        <div class="disposal-instructions">
+                            <h4><i class="fas fa-clipboard-list"></i> Disposal Instructions</h4>
+                            <ol id="instructionsList">
+                                <li>Rinse the bottle to remove any residue</li>
+                                <li>Remove the cap and label if possible</li>
+                                <li>Crush the bottle to save space</li>
+                                <li>Place in the blue recycling bin</li>
+                            </ol>
+                        </div>
+
+                        <div class="environmental-impact">
+                            <h4><i class="fas fa-seedling"></i> Environmental Impact</h4>
+                            <p id="impactText">Recycling this plastic bottle saves energy and reduces ocean pollution. One recycled bottle can save enough energy to power a lightbulb for 3 hours!</p>
+                        </div>
+
+                        <div class="weight-input-section">
+                            <h4><i class="fas fa-weight"></i> Waste Weight</h4>
+                            <div class="weight-input-group">
+                                <input type="number" id="wasteWeight" class="weight-input" placeholder="Enter weight" min="0" step="0.1">
+                                <select id="weightUnit" class="weight-unit">
+                                    <option value="kg">Kilograms (kg)</option>
+                                    <option value="g">Grams (g)</option>
+                                    <option value="lbs">Pounds (lbs)</option>
+                                </select>
+                            </div>
+                            <p class="weight-hint">How much waste are you recycling or disposing of?</p>
+                        </div>
+
+                        <div class="result-actions">
+                            <button class="btn btn-primary" id="logWasteBtn">
+                                <i class="fas fa-check"></i> Log This Waste
+                            </button>
+                            <button class="btn btn-secondary" id="scanAgainBtn">
+                                <i class="fas fa-redo"></i> Scan Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QR Code Validation Guide -->
+            <div class="qr-validation-guide">
+                <div class="guide-header">
+                    <i class="fas fa-qrcode"></i>
+                    <h2>Valid QR Code Requirements</h2>
+                </div>
+                <div class="guide-content">
+                    <p>Only <strong>official EcoSort QR codes</strong> can be scanned. Regular images, barcodes, or text will be rejected.</p>
+                    <div class="guide-items">
+                        <div class="guide-item">
+                            <div class="guide-icon success">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="guide-text">
+                                <strong>Valid:</strong>
+                                <span>Official EcoSort waste product QR codes</span>
+                            </div>
+                        </div>
+                        <div class="guide-item">
+                            <div class="guide-icon error">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            <div class="guide-text">
+                                <strong>Invalid:</strong>
+                                <span>Regular product barcodes, website URLs, or random images</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="guide-methods">
+                        <div class="method-badge">
+                            <i class="fas fa-camera"></i>
+                            <span>Live Camera Scan</span>
+                        </div>
+                        <div class="method-badge">
+                            <i class="fas fa-image"></i>
+                            <span>Upload Image</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Scans -->
+            <div class="recent-scans" id="recentScans">
+                <h2>Recent Scans</h2>
+                <div class="scans-grid" id="scansGrid">
+                    <p class="no-scans">No scans yet. Start scanning to see your history!</p>
+                </div>
+            </div>
+
+            <!-- Info Cards -->
+            <div class="info-section">
+                <h2>Waste Categories</h2>
+                <div class="categories-grid">
+                    <div class="category-info-card dry">
+                        <div class="category-info-icon">
+                            <i class="fas fa-recycle"></i>
+                        </div>
+                        <h3>Dry Waste</h3>
+                        <p>Paper, cardboard, plastic, metal, glass - recyclable materials</p>
+                        <div class="category-examples">
+                            <span class="example-tag">Paper</span>
+                            <span class="example-tag">Plastic</span>
+                            <span class="example-tag">Metal</span>
+                        </div>
+                    </div>
+
+                    <div class="category-info-card wet">
+                        <div class="category-info-icon">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <h3>Wet Waste</h3>
+                        <p>Food waste, organic matter - biodegradable and compostable</p>
+                        <div class="category-examples">
+                            <span class="example-tag">Food Scraps</span>
+                            <span class="example-tag">Garden Waste</span>
+                            <span class="example-tag">Peels</span>
+                        </div>
+                    </div>
+
+                    <div class="category-info-card ewaste">
+                        <div class="category-info-icon">
+                            <i class="fas fa-laptop"></i>
+                        </div>
+                        <h3>E-Waste</h3>
+                        <p>Electronics, batteries - requires special disposal</p>
+                        <div class="category-examples">
+                            <span class="example-tag">Phones</span>
+                            <span class="example-tag">Batteries</span>
+                            <span class="example-tag">Cables</span>
+                        </div>
+                    </div>
+
+                    <div class="category-info-card hazardous">
+                        <div class="category-info-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3>Hazardous</h3>
+                        <p>Chemicals, paint, medical waste - dangerous materials</p>
+                        <div class="category-examples">
+                            <span class="example-tag">Chemicals</span>
+                            <span class="example-tag">Paint</span>
+                            <span class="example-tag">Medical</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>EcoSort</h4>
+                    <p>Smart waste management for sustainable cities</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="scanner.html">Scanner</a></li>
+                        <li><a href="analytics.html">Analytics</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <p>Email: info@ecosort.com</p>
+                    <p>Phone: +1 234 567 8900</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 EcoSort. Built for a sustainable future.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="scanner.js"></script>
+    <!-- Invalid QR modal -->
+    <div id="invalidQrModal" class="modal" style="display:none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <button class="modal-close" id="invalidModalClose">&times;</button>
+            <div class="modal-body">
+                <i class="fas fa-exclamation-triangle modal-icon"></i>
+                <h3>Please provide a valid QR</h3>
+                <p id="invalidModalMessage">The scanned code is invalid. Please scan a valid EcoSort QR code.</p>
+                <div class="modal-actions">
+                    <button id="invalidModalOk" class="btn btn-primary">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
