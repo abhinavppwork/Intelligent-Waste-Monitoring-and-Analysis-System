@@ -477,45 +477,83 @@ function logWaste() {
         return;
     }
     
-    // Get existing scans from localStorage
-    let scans = JSON.parse(localStorage.getItem('wasteScans') || '[]');
-    
-    // Add new scan with timestamp and weight
+    // Build new scan object
     const newScan = {
         ...wasteData,
         weight: parseFloat(wasteWeight),
         unit: weightUnit,
         timestamp: new Date().toISOString(),
+        // id is optional locally; server will return _id
         id: Date.now()
     };
-    
-    scans.unshift(newScan); // Add to beginning
-    
-    // Keep only last 20 scans
-    if (scans.length > 20) {
-        scans = scans.slice(0, 20);
+
+    // Try to send to backend. If it fails, fall back to localStorage
+    sendScanToBackend(newScan)
+      .then(saved => {
+        // saved is the saved document returned from server (if successful)
+        updateAnalyticsData(wasteData.category);
+        loadRecentScans();
+        document.getElementById('wasteWeight').value = '';
+        document.getElementById('weightUnit').value = 'kg';
+        updateStatus('success', `Waste logged to server successfully!`);
+        setTimeout(() => closeResults(), 1200);
+      })
+      .catch(err => {
+        console.warn('Backend save failed, saving locally instead:', err);
+        // local fallback (preserve previous behavior)
+        let scans = JSON.parse(localStorage.getItem('wasteScans') || '[]');
+        scans.unshift(newScan);
+        if (scans.length > 20) scans = scans.slice(0, 20);
+        localStorage.setItem('wasteScans', JSON.stringify(scans));
+
+        updateAnalyticsData(wasteData.category);
+        loadRecentScans();
+        document.getElementById('wasteWeight').value = '';
+        document.getElementById('weightUnit').value = 'kg';
+        updateStatus('success', `Saved locally (offline).`);
+        setTimeout(() => closeResults(), 1200);
+      });
+}
+
+// ========================================
+// Send scan object to backend API
+// Attempts POST to /api/waste/scan and resolves with saved doc
+// Rejects on network/server error
+async function sendScanToBackend(scan) {
+    const BACKEND_BASE = 'http://localhost:5000';
+    const url = `${BACKEND_BASE}/api/waste/scan`;
+
+    try {
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                qrCode: scan.name ? scan.name.replace(/\s+/g, '_').toUpperCase() : (scan.qrCode || 'UNKNOWN'),
+                itemName: scan.name || scan.itemName || 'Unknown',
+                category: scan.category,
+                // Send proper numeric impact object, not the description string
+                impact: {
+                    co2Saved: 0.5,  // Default values - can be customized per item type
+                    energySaved: 0.1
+                },
+                // Include weight and unit from the scan object
+                weight: scan.weight || 0,
+                unit: scan.unit || 'kg',
+                // Attach user identifier if available (from auth.js)
+                userId: (typeof getCurrentUser === 'function' && getCurrentUser()) ? getCurrentUser().email : undefined
+            }),
+        });
+
+        if (!resp.ok) {
+            const text = await resp.text();
+            throw new Error(`Server responded with ${resp.status}: ${text}`);
+        }
+
+        const saved = await resp.json();
+        return saved;
+    } catch (err) {
+        throw err;
     }
-    
-    // Save to localStorage
-    localStorage.setItem('wasteScans', JSON.stringify(scans));
-    
-    // Update analytics data
-    updateAnalyticsData(wasteData.category);
-    
-    // Reload recent scans display
-    loadRecentScans();
-    
-    // Reset weight input
-    document.getElementById('wasteWeight').value = '';
-    document.getElementById('weightUnit').value = 'kg';
-    
-    // Show success message
-    updateStatus('success', `Waste logged successfully! ${wasteWeight}${weightUnit} added to history.`);
-    
-    // Close results after a moment
-    setTimeout(() => {
-        closeResults();
-    }, 1500);
 }
 
 // ========================================
@@ -573,12 +611,36 @@ function updateStatus(type, message) {
 }
 
 // ========================================
-// Load Recent Scans from localStorage
+// Load Recent Scans (from backend per-user or fallback to localStorage)
 // ========================================
 function loadRecentScans() {
     const scansGrid = document.getElementById('scansGrid');
-    const scans = JSON.parse(localStorage.getItem('wasteScans') || '[]');
+    const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
     
+    if (user) {
+        // User is logged in - fetch their scans from backend
+        fetch(`http://localhost:5000/api/waste?userId=${encodeURIComponent(user.email)}`)
+            .then(res => res.json())
+            .then(scans => {
+                displayScansGrid(scans, scansGrid);
+            })
+            .catch(err => {
+                console.warn('Failed to fetch scans from server, using local fallback:', err);
+                loadRecentScansFromLocal();
+            });
+    } else {
+        // No user logged in - use localStorage
+        loadRecentScansFromLocal();
+    }
+}
+
+function loadRecentScansFromLocal() {
+    const scansGrid = document.getElementById('scansGrid');
+    const scans = JSON.parse(localStorage.getItem('wasteScans') || '[]');
+    displayScansGrid(scans, scansGrid);
+}
+
+function displayScansGrid(scans, scansGrid) {
     if (scans.length === 0) {
         scansGrid.innerHTML = '<p class="no-scans">No scans yet. Start scanning to see your history!</p>';
         return;
@@ -589,12 +651,14 @@ function loadRecentScans() {
     scans.slice(0, 8).forEach(scan => {
         const card = document.createElement('div');
         card.className = 'scan-history-card';
+        const displayName = scan.itemName || scan.name || 'Unknown Item';
+        const displayTime = scan.timestamp ? formatTime(scan.timestamp) : 'Unknown time';
         card.innerHTML = `
             <div class="scan-history-header">
                 <span class="scan-category-tag ${scan.category}">${getCategoryFullName(scan.category)}</span>
-                <span class="scan-time">${formatTime(scan.timestamp)}</span>
+                <span class="scan-time">${displayTime}</span>
             </div>
-            <div class="scan-item-name">${scan.name}</div>
+            <div class="scan-item-name">${displayName}</div>
         `;
         
         // Add click handler to view details

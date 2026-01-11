@@ -132,3 +132,20 @@ window.addEventListener('load', () => {
         document.body.style.opacity = '1';
     }, 100);
 });
+
+// ========================================
+// Utility: Clear Local Data
+// ========================================
+function clearLocalStorage() {
+    localStorage.removeItem('wasteScans');
+    localStorage.removeItem('wasteAnalytics');
+    console.log('✓ Cleared wasteScans and wasteAnalytics from localStorage');
+    alert('Frontend data cleared! Refresh the page to see empty state.');
+}
+
+function clearAllLocalStorage() {
+    localStorage.clear();
+    console.log('✓ Cleared all localStorage');
+    alert('All frontend data cleared! Refresh the page.');
+}
+

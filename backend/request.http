@@ -1,0 +1,53 @@
+###
+# REST Client requests for EcoSort backend
+# Edit the variables below to match your environment
+@backend = http://localhost:5000
+@userId = abhinav.cheruku007@gmail.com
+@days = 30
+
+###
+# Health Check
+GET {{backend}}/api/health
+Accept: application/json
+
+###
+# Get all scans (server)
+GET {{backend}}/api/waste
+Accept: application/json
+
+###
+# Get scans for a specific user
+GET {{backend}}/api/waste?userId={{userId}}
+Accept: application/json
+
+###
+# Get aggregated stats (all users)
+GET {{backend}}/api/waste/stats
+Accept: application/json
+
+###
+# Get aggregated stats (specific user)
+GET {{backend}}/api/waste/stats?userId={{userId}}
+Accept: application/json
+
+###
+# Get analytics (per-day, per-category) for last N days (user-scoped)
+GET {{backend}}/api/waste/analytics?userId={{userId}}&days={{days}}
+Accept: application/json
+
+###
+# Create a new scan (POST)
+POST {{backend}}/api/waste/scan
+Content-Type: application/json
+
+{
+  "qrCode": "PLASTIC_BOTTLE_001",
+  "itemName": "Plastic Bottle (PET)",
+  "category": "dry",
+  "impact": { "co2Saved": 0.2, "energySaved": 0.05 },
+  "userId": "{{userId}}"
+}
+
+
+###
+GET http://localhost:5000/api/waste/analytics?userId=abhinav.cheruku007@gmail.com&days=30

@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="analytics.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script src="analytics.js"></script>
 </head>
 <body>
     <script>
@@ -41,14 +44,8 @@
                     <p>Track your waste segregation patterns and environmental impact</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-secondary" id="exportBtn">
+                    <button class="btn btn-primary" id="exportBtn">
                         <i class="fas fa-download"></i> Export Data
-                    </button>
-                    <button class="btn btn-secondary" id="resetBtn">
-                        <i class="fas fa-eraser"></i> Reset Analytics
-                    </button>
-                    <button class="btn btn-primary" id="refreshBtn">
-                        <i class="fas fa-sync"></i> Refresh
                     </button>
                 </div>
             </div>
@@ -563,13 +560,6 @@
             return { labels, dry, wet, ewaste, hazardous };
         }
 
-        function resetAnalytics() {
-            if (!confirm('Reset analytics and clear scan history? This cannot be undone.')) return;
-            localStorage.removeItem('wasteScans');
-            loadAnalytics();
-            alert('Analytics reset.');
-        }
-
         function exportData() {
             const scans = JSON.parse(localStorage.getItem('wasteScans') || '[]');
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(scans, null, 2));
@@ -583,11 +573,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadAnalytics();
-            const refreshBtn = document.getElementById('refreshBtn');
-            const resetBtn = document.getElementById('resetBtn');
             const exportBtn = document.getElementById('exportBtn');
-            if (refreshBtn) refreshBtn.addEventListener('click', loadAnalytics);
-            if (resetBtn) resetBtn.addEventListener('click', resetAnalytics);
             if (exportBtn) exportBtn.addEventListener('click', exportData);
         });
     </script>
